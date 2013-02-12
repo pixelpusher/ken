@@ -1,66 +1,144 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Ken by pixelpusher</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <title>Ken - Visual Knowledge Browser</title>
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <!-- Browser  -->
+    <script type="text/x-ejs-template" name="browser">
+      <div id="facets"></div>
+      <div id="matrix" class="surface"></div>
+      <div id="details"></div>
+    </script>
+
+    <!-- Details  -->
+    <script type="text/x-ejs-template" name="details">
+      <a class="close-details image" href="#">
+        <img src="<%= object.properties.image %>"/>
+        <div class="label">Close</div>
+      </a>
+      <div class="details-wrapper">
+      <% if (object.get('website')) { %>
+        <h1><a target="_blank" href="<%= object.get('website') %>"><%= object.get('name') %></a></h1>
+      <% } else { %>
+        h1><%= object.get('name') %></h1>
+      <% } %>
+      <div class="abstract">
+        <%= object.get('abstract') %>
+        [ <a href="<%= object.get('website') %>" target="_blank">Read More</a> ]
+      </div>
+      <% _.each(object.type().properties, function(p, key) { %>
+        <% if (p.meta && p.meta.details) { %>
+          <div class="property">
+            <div class="property-name"><%= p.name %></div>
+            <div class="values">
+              <% values = object.get(key); %>
+              <% values = _.isArray(values) ? values : [values] %>
+              <% _.each(values, function(val) { %>
+                <% var color = filters[key] && filters[key][val] ? filters[key][val].color : null %>
+                <span style="background: <%= color %>"><%= val %></span>
+              <% }); %>
+            </div>
+          </div>          
+        <% } %>
+      <% }); %>
+      </div>
+    </script>
+
+    <!-- Item  -->
+    <script type="text/x-ejs-template" name="item">
+      <div class="item" id="<%= _.htmlId(item._id) %>" data-id="<%= item._id %>">
+        <img src="<%= item.properties.image %>"/>
+        <% if (matches.length > 0) { %>
+          <div class="markers">
+            <% _.each(matches, function(match) { %>
+              <div class="marker" style="background: <%= match.color %>"></div>
+            <% }); %>
+          </div>
+        <% } %>
+        <div class="name"><%= item.properties.name %></div>
+      </div>
+    </script>
+
+    <!-- Facets -->
+    <script type="text/x-ejs-template" name="facets">
+      <!--<h1>Filters</h1>-->
+      <% var count = 0; %>
+      <% _.each(facets, function(f, key) { %>
+        <div class="filter">
+          <div class="filter-name"><%= f.name %></div>
+          <div class="selected-values">
+            <% _.each(f.selectedValues, function(val) { %>
+              <a href="#" class="value remove" style="background: <%= val.color %>" data-property="<%= key %>" data-value="<%= val.val %>"><%= val.val.toLowerCase().substr(0, 36) %>
+                <div class="indicators">
+                  <div class="frequency"><%= val.objects.length %></div>
+                  <div class="related-objects" style="width: <%= f.scale(val.relatedObjects.length) %>px"></div>
+                  <div class="matching-objects" style="width: <%= f.scale(val.objects.length) %>px"></div>
+                </div>
+              </a>
+            <% }); %>
+          </div>
+
+          <div class="available-values">
+            <% _.each(f.availableValues, function(val) { %>
+              <a href="#" class="value add<%= val.relatedObjects.length > 0 ? " related" : "" %>" data-property="<%= key %>" data-value="<%= val.val %>">
+                <%= val.val.toLowerCase().substr(0, 36) %>
+                <div class="indicators">
+                  <div class="frequency"><%= val.objects.length %></div>
+                  <div class="related-objects" style="width: <%= f.scale(val.relatedObjects.length) %>px"></div>
+                  <div class="matching-objects" style="width: <%= f.scale(val.objects.length) %>px"></div>
+                </div>
+              </a>
+            <% }); %>
+          </div>
+        </div>
+      <% }); %>
+    </script>
+
+    <script type="text/javascript" src="lib/jquery.js"></script>
+    <script type="text/javascript" src="lib/underscore.js"></script>
+    <script type="text/javascript" src="lib/data.js"></script>
+    <script type="text/javascript" src="lib/backbone.js"></script>
+
+    <script type="text/javascript" src="src/util.js"></script>
+    <script type="text/javascript" src="src/model.js"></script>
+
+    <!-- Application -->
+    <script type="text/javascript" src="src/ken.js"></script>
+
+    <script type="text/javascript" src="src/app.js"></script>
+
+    <script type="text/javascript">
+      $(function() {
+        window.app = new Application({ dataset: "data/articles_2013_02_11.json"});
+        app.render();
+
+        // Start responding to routes
+        window.router = new Router({});
+        Backbone.history.start();
+      });
+    </script>
+    
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans+Condensed:700|Open+Sans:400italic,700italic,400,700' rel='stylesheet' type='text/css'>
+
+    <!-- <link rel="stylesheet" type="text/css" media="all" href="fonts/open-sans.css"/> -->
+    <link rel="stylesheet" type="text/css" media="all" href="stylesheets/reset.css"/>
+    <link rel="stylesheet" type="text/css" media="all" href="stylesheets/style.css"/>
+    <link rel="stylesheet" type="text/css" media="all" href="stylesheets/ken.css"/>
+    
   </head>
   <body>
-    <div class="wrapper">
-      <header>
-        <h1>Ken</h1>
-        <p>Visual Knowledge Browser</p>
-
-        <p class="view"><a href="https://github.com/pixelpusher/ken">View the Project on GitHub <small>pixelpusher/ken</small></a></p>
-
-
-        <ul>
-          <li><a href="https://github.com/pixelpusher/ken/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/pixelpusher/ken/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/pixelpusher/ken">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h3>Welcome to GitHub Pages.</h3>
-
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
-
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
-
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
-
-<h3>Designer Templates</h3>
-
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
-
-<h3>Rather Drive Stick?</h3>
-
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
-
-<h3>Authors and Contributors</h3>
-
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
-
-<h3>Support or Contact</h3>
-
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/pixelpusher">pixelpusher</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
+    <div id="container">
+      <div id="header">
+        <div class="title"><a href="/">Ken</a> - A Visual Knowledge Browser</div>
+        <div class="powered-by">
+          example data provided by <a target="_blank" href="http://developer.nytimes.com/docs/read/most_popular_api">NYTimes API</a>
+          &nbsp;&nbsp; &middot; &nbsp;&nbsp;<a href="info.html">Learn more</a>
+        </div>
+      </div>
+      <div id="main">
+        Main Content
+      </div>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
   </body>
 </html>
